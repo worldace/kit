@@ -26,7 +26,7 @@ function kit(self){
         for(const v of method){
             const match = v.match(/^\$(.*?)_([^_]+)$/)
             if(match){
-                self.$[match[1]]?.addEventListener(match[2], self[v])
+                self.shadowRoot.querySelector(`#${match[1]}`)?.addEventListener(match[2], self[v])
             }
         }
     }
