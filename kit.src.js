@@ -5,10 +5,7 @@ import {html, render} from 'https://unpkg.com/htm/preact/standalone.module.js'
 function kit(self){
     if(!self.shadowRoot){
         self.attachShadow({mode:'open'})
-        self.$ = new Proxy(function(){}, {
-            get: (_,name) => self.shadowRoot.querySelector(`#${name}`),
-            apply: (_,__,args) => querySelector(self.shadowRoot, args[0]),
-        })
+        self.$ = createProxy(self)
 
         const method = Object.getOwnPropertyNames(self.constructor.prototype).filter(v => typeof self[v] === 'function')
         method.forEach(v => self[v] = self[v].bind(self))
@@ -39,16 +36,30 @@ function kit(self){
 }
 
 
-function querySelector(root, selector){
-    if(selector.startsWith('*')){
-        if(selector.length > 1){
-            selector = selector.substring(1)
+function createProxy(self){
+
+    function get(_, name){
+        return self.shadowRoot.querySelector(`#${name}`)
+    }
+
+    function set(_, name, value){
+        self[name] = value
+        render(self.html(), self.shadowRoot)
+        return true
+    }
+
+    function apply(_, __, args){
+        const selector = args[0]
+
+        if(selector.startsWith('*')){
+            return self.shadowRoot.querySelectorAll(selector.substring(1) || '*')
         }
-        return root.querySelectorAll(selector)
+        else{
+            return self.shadowRoot.querySelector(selector)
+        }
     }
-    else{
-        return root.querySelector(selector)
-    }
+
+    return new Proxy(function(){}, {get, set, apply})
 }
 
 
