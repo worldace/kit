@@ -2,7 +2,11 @@
 
 import {html, render} from 'https://unpkg.com/htm/preact/standalone.module.js'
 
-function kit(self){
+function kit(self, ...vars){
+    if(Array.isArray(self)){
+        return html(self, ...vars)
+    }
+
     if(!self.shadowRoot){
         self.attachShadow({mode:'open'})
         self.$ = createProxy(self)
@@ -26,7 +30,8 @@ function kit(self){
         for(const v of method){
             const match = v.match(/^\$(.*?)_([^_]+)$/)
             if(match){
-                self.shadowRoot.querySelector(`#${match[1]}`)?.addEventListener(match[2], self[v])
+                const el = match[1] === '' ? self.shadowRoot : self.shadowRoot.querySelector(`#${match[1]}`)
+                el.addEventListener(match[2], self[v])
             }
         }
     }
@@ -52,7 +57,7 @@ function createProxy(self){
         const selector = args[0]
 
         if(selector.startsWith('*')){
-            return self.shadowRoot.querySelectorAll(selector.substring(1) || '*')
+            return Array.from(self.shadowRoot.querySelectorAll(selector.substring(1) || '*'))
         }
         else{
             return self.shadowRoot.querySelector(selector)
@@ -62,7 +67,5 @@ function createProxy(self){
     return new Proxy(function(){}, {get, set, apply})
 }
 
-
-kit.h = html
 
 export default kit
