@@ -2,6 +2,9 @@
 
 import {html, render} from 'https://unpkg.com/htm/preact/standalone.module.js'
 
+const CSS = new Map()
+
+
 function kit(self, ...vars){
     if(Array.isArray(self)){
         return html(self, ...vars)
@@ -14,16 +17,34 @@ function kit(self, ...vars){
         const method = Object.getOwnPropertyNames(self.constructor.prototype).filter(v => typeof self[v] === 'function')
         method.forEach(v => self[v] = self[v].bind(self))
 
-        const dom = self.html()
+        if(self.css && document.adoptedStyleSheets){
+            if(!CSS.has(self.constructor)){
+                const css = new CSSStyleSheet()
+                css.replaceSync(self.css())
+                CSS.set(self.constructor, css)
+            }
+            self.shadowRoot.adoptedStyleSheets = [CSS.get(self.constructor)]
+        }
+
+        let dom = self.html()
         self.vdom = dom.constructor === undefined || Array.isArray(dom)
 
         if(self.vdom){
+            if(self.css && !document.adoptedStyleSheets){
+                dom = [dom, html`<style>${self.css()}</style>`]
+            }
             render(dom, self.shadowRoot)
         }
         else if(typeof dom === 'string'){
+            if(self.css && !document.adoptedStyleSheets){
+                dom += `<style>${self.css()}</style>`
+            }
             self.shadowRoot.innerHTML = dom
         }
         else{
+            if(self.css && !document.adoptedStyleSheets){
+                self.shadowRoot.innerHTML = `<style>${self.css()}</style>`
+            }
             self.shadowRoot.append(dom)
         }
 
@@ -36,7 +57,11 @@ function kit(self, ...vars){
         }
     }
     else if(self.vdom){
-        render(self.html(), self.shadowRoot)
+        let dom = self.html()
+        if(self.css && !document.adoptedStyleSheets){
+            dom = [dom, html`<style>${self.css()}</style>`]
+        }
+        render(dom, self.shadowRoot)
     }
 }
 
