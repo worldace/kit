@@ -18,12 +18,13 @@ function kit(self, ...vars){
         method.forEach(v => self[v] = self[v].bind(self))
 
         if(self.css && document.adoptedStyleSheets){
-            if(!CSS.has(self.constructor)){
-                const css = new CSSStyleSheet()
+            let css = CSS.get(self.constructor)
+            if(!css){
+                css = new CSSStyleSheet()
                 css.replaceSync(self.css())
                 CSS.set(self.constructor, css)
             }
-            self.shadowRoot.adoptedStyleSheets = [CSS.get(self.constructor)]
+            self.shadowRoot.adoptedStyleSheets = [css]
         }
 
         let dom = self.html()
