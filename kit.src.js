@@ -14,14 +14,8 @@ function kit(self, ...vars){
         self.attachShadow({mode:'open'})
         self.$ = new Proxy(function(){}, {get:get.bind(self), set:set.bind(self), apply:apply.bind(self)})
 
-        const method = []
-        for(const v of Object.getOwnPropertyNames(self.constructor.prototype)){
-            if(typeof self[v] !== 'function' || v === 'constructor'){
-                continue
-            }
-            self[v] = self[v].bind(self)
-            method.push(v)
-        }
+        const method = Object.getOwnPropertyNames(self.constructor.prototype).filter(v => typeof self[v] === 'function' && v !== 'constructor')
+        method.forEach(v => self[v] = self[v].bind(self))
 
         if(self.css && document.adoptedStyleSheets){
             let css = CSS.get(self.constructor)
@@ -66,7 +60,7 @@ function kit(self, ...vars){
                     el.addEventListener(match[2], self[v])
                 }
                 else{
-                    throw `kit.jsイベント登録エラー：「${self.constructor.name}.${match[0]}」のタグが存在しません`
+                    throw `kit.jsイベント登録エラー： ${self.constructor.name}.${match[0]} の登録先が存在しません`
                 }
             }
         }
