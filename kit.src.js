@@ -12,10 +12,16 @@ function kit(self, ...vars){
 
     if(!self.shadowRoot){
         self.attachShadow({mode:'open'})
-        self.$ = createProxy(self)
+        self.$ = new Proxy(function(){}, {get:get.bind(self), set:set.bind(self), apply:apply.bind(self)})
 
-        const method = Object.getOwnPropertyNames(self.constructor.prototype).filter(v => typeof self[v] === 'function')
-        method.forEach(v => self[v] = self[v].bind(self))
+        const method = []
+        for(const v of Object.getOwnPropertyNames(self.constructor.prototype)){
+            if(typeof self[v] !== 'function' || v === 'constructor'){
+                continue
+            }
+            self[v] = self[v].bind(self)
+            method.push(v)
+        }
 
         if(self.css && document.adoptedStyleSheets){
             let css = CSS.get(self.constructor)
@@ -49,11 +55,19 @@ function kit(self, ...vars){
             self.shadowRoot.append(dom)
         }
 
+        const specialID = {'':self.shadowRoot, 'Host':self, 'Window':window, 'Document':document, 'Body':document.body}
+
         for(const v of method){
             const match = v.match(/^\$(.*?)_([^_]+)$/)
             if(match){
-                const el = match[1] === '' ? self.shadowRoot : self.shadowRoot.querySelector(`#${match[1]}`)
-                el.addEventListener(match[2], self[v])
+                const el = specialID[match[1]] ?? self.shadowRoot.querySelector(`#${match[1]}`)
+
+                if(el){
+                    el.addEventListener(match[2], self[v])
+                }
+                else{
+                    throw `kit.jsイベント登録エラー：「${self.constructor.name}.${match[0]}」のタグが存在しません`
+                }
             }
         }
     }
@@ -67,30 +81,26 @@ function kit(self, ...vars){
 }
 
 
-function createProxy(self){
 
-    function get(_, name){
-        return self.shadowRoot.querySelector(`#${name}`)
+function get(_, name){
+    return this.shadowRoot.querySelector(`#${name}`)
+}
+
+function set(_, name, value){
+    this[name] = value
+    render(this.html(), this.shadowRoot)
+    return true
+}
+
+function apply(_, __, args){
+    const selector = args[0]
+
+    if(selector.startsWith('*')){
+        return Array.from(this.shadowRoot.querySelectorAll(selector.substring(1) || '*'))
     }
-
-    function set(_, name, value){
-        self[name] = value
-        render(self.html(), self.shadowRoot)
-        return true
+    else{
+        return this.shadowRoot.querySelector(selector)
     }
-
-    function apply(_, __, args){
-        const selector = args[0]
-
-        if(selector.startsWith('*')){
-            return Array.from(self.shadowRoot.querySelectorAll(selector.substring(1) || '*'))
-        }
-        else{
-            return self.shadowRoot.querySelector(selector)
-        }
-    }
-
-    return new Proxy(function(){}, {get, set, apply})
 }
 
 
