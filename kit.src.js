@@ -9,10 +9,9 @@ function kit(self, ...vars){
     if(Array.isArray(self)){
         return html(self, ...vars)
     }
-
-    if(!self.shadowRoot){
+    else if(!self.shadowRoot){
         self.attachShadow({mode:'open'})
-        self.$ = new Proxy(function(){}, {get:get.bind(self), set:set.bind(self), apply:apply.bind(self)})
+        self.$ = new Proxy(function(){}, {get:get.bind(self), apply:apply.bind(self)})
 
         const method = Object.getOwnPropertyNames(self.constructor.prototype).filter(v => typeof self[v] === 'function' && v !== 'constructor')
         method.forEach(v => self[v] = self[v].bind(self))
@@ -80,20 +79,20 @@ function get(_, name){
     return this.shadowRoot.querySelector(`#${name}`)
 }
 
-function set(_, name, value){
-    this[name] = value
-    render(this.html(), this.shadowRoot)
-    return true
-}
-
 function apply(_, __, args){
-    const selector = args[0]
+    args = args[0]
 
-    if(selector.startsWith('*')){
-        return Array.from(this.shadowRoot.querySelectorAll(selector.substring(1) || '*'))
+    if(typeof args === 'string'){
+        if(args.startsWith('*')){
+            return Array.from(this.shadowRoot.querySelectorAll(args.substring(1) || '*'))
+        }
+        else{
+            return this.shadowRoot.querySelector(args)
+        }
     }
-    else{
-        return this.shadowRoot.querySelector(selector)
+    else if(typeof args === 'object'){
+        Object.assign(this, args)
+        kit(this)
     }
 }
 
