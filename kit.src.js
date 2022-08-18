@@ -2,7 +2,7 @@
 
 import {html, render} from 'https://unpkg.com/htm/preact/standalone.module.js'
 
-const CSS = new Map()
+const StyleSheets = new Map()
 
 
 function kit(self, ...vars){
@@ -17,11 +17,11 @@ function kit(self, ...vars){
         method.forEach(v => self[v] = self[v].bind(self))
 
         if(self.css && document.adoptedStyleSheets){
-            let css = CSS.get(self.constructor)
+            let css = StyleSheets.get(self.constructor)
             if(!css){
                 css = new CSSStyleSheet()
                 css.replaceSync(self.css())
-                CSS.set(self.constructor, css)
+                StyleSheets.set(self.constructor, css)
             }
             self.shadowRoot.adoptedStyleSheets = [css]
         }
@@ -41,9 +41,12 @@ function kit(self, ...vars){
             }
             self.shadowRoot.innerHTML = dom
         }
-        else{
+        else if(dom instanceof Node){
             if(self.css && !document.adoptedStyleSheets){
                 self.shadowRoot.innerHTML = `<style>${self.css()}</style>`
+            }
+            if(dom.tagName === 'TEMPLATE'){
+                dom = dom.content.cloneNode(true)
             }
             self.shadowRoot.append(dom)
         }
@@ -79,22 +82,29 @@ function get(_, name){
     return this.shadowRoot.querySelector(`#${name}`)
 }
 
-function apply(_, __, args){
-    args = args[0]
-
-    if(typeof args === 'string'){
-        if(args.startsWith('*')){
-            return Array.from(this.shadowRoot.querySelectorAll(args.substring(1) || '*'))
+function apply(_, __, [arg]){
+    if(typeof arg === 'string'){
+        if(arg.startsWith('*')){
+            return Array.from(this.shadowRoot.querySelectorAll(arg.substring(1) || '*'))
         }
         else{
-            return this.shadowRoot.querySelector(args)
+            return this.shadowRoot.querySelector(arg)
         }
     }
-    else if(typeof args === 'object'){
-        Object.assign(this, args)
+    else if(typeof arg === 'object'){
+        Object.assign(this, arg)
         kit(this)
     }
 }
+
+
+kit.ready = async function(el = document){
+    const set = new Set
+    el.querySelectorAll(':not(:defined)').forEach(v => set.add(v.localName))
+    await Promise.all( Array.from(set).map(v => customElements.whenDefined(v)) )
+    el.dispatchEvent(new CustomEvent('kitready', {bubbles:true, composed:true}))
+}
+
 
 
 export default kit
