@@ -1,6 +1,6 @@
 // https://cdn.jsdelivr.net/gh/worldace/kit/kit.js
 
-import {html, render} from 'https://unpkg.com/htm/preact/standalone.module.js'
+import {html, render} from 'https://unpkg.com/htm@3.1.1/preact/standalone.module.js'
 
 const StyleSheets = new Map()
 
@@ -95,14 +95,6 @@ function apply(_, __, [arg]){
         Object.assign(this, arg)
         kit(this)
     }
-}
-
-
-kit.ready = async function(el = document){
-    const set = new Set
-    el.querySelectorAll(':not(:defined)').forEach(v => set.add(v.localName))
-    await Promise.all( Array.from(set).map(v => customElements.whenDefined(v)) )
-    el.dispatchEvent(new CustomEvent('kitready', {bubbles:true, composed:true}))
 }
 
 
