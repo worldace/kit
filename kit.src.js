@@ -2,7 +2,6 @@
 
 import {html, render} from 'https://unpkg.com/htm@3.1.1/preact/standalone.module.js'
 
-const StyleSheets = new Map()
 
 
 function kit(self, ...vars){
@@ -17,11 +16,11 @@ function kit(self, ...vars){
         method.forEach(v => self[v] = self[v].bind(self))
 
         if(self.css && document.adoptedStyleSheets){
-            let css = StyleSheets.get(self.constructor)
+            let css = kit.StyleSheets.get(self.constructor)
             if(!css){
                 css = new CSSStyleSheet()
                 css.replaceSync(self.css())
-                StyleSheets.set(self.constructor, css)
+                kit.StyleSheets.set(self.constructor, css)
             }
             self.shadowRoot.adoptedStyleSheets = [css]
         }
@@ -82,6 +81,8 @@ function get(_, name){
     return this.shadowRoot.querySelector(`#${name}`)
 }
 
+
+
 function apply(_, __, [arg]){
     if(typeof arg === 'string'){
         if(arg.startsWith('*')){
@@ -97,6 +98,9 @@ function apply(_, __, [arg]){
     }
 }
 
+
+
+kit.StyleSheets = new Map()
 
 
 export default kit
