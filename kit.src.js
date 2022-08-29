@@ -26,9 +26,9 @@ function kit(self, ...vars){
         }
 
         let dom = self.html()
-        self.vdom = dom.constructor === undefined || Array.isArray(dom)
+        self.isVDOM = dom.constructor === undefined || Array.isArray(dom)
 
-        if(self.vdom){
+        if(self.isVDOM){
             if(self.css && !document.adoptedStyleSheets){
                 dom = [dom, html`<style>${self.css()}</style>`]
             }
@@ -66,7 +66,7 @@ function kit(self, ...vars){
             }
         }
     }
-    else if(self.vdom){
+    else if(self.isVDOM){
         let dom = self.html()
         if(self.css && !document.adoptedStyleSheets){
             dom = [dom, html`<style>${self.css()}</style>`]
