@@ -83,7 +83,7 @@ function get(_, name){
 
 
 
-function apply(_, __, [arg]){
+function apply(_, __, [arg, ...values]){
     if(typeof arg === 'string'){
         if(arg.startsWith('*')){
             return Array.from(this.shadowRoot.querySelectorAll(arg.substring(1) || '*'))
@@ -91,6 +91,12 @@ function apply(_, __, [arg]){
         else{
             return this.shadowRoot.querySelector(arg)
         }
+    }
+    else if(Array.isArray(arg)){
+        const template = document.createElement('template')
+        template.innerHTML = arg.reduce((result, v, i) => result + values[i-1] + v).trim()
+
+        return template.content.childNodes.length === 1 ? template.content.firstChild : template.content
     }
     else if(typeof arg === 'object'){
         Object.assign(this, arg)
