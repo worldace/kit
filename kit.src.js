@@ -11,10 +11,7 @@ function kit(self, ...vars){
     }
     else if(!self.shadowRoot){
         self.attachShadow({mode:'open'})
-        self.$ = new Proxy(function(){}, {
-            get  : (_, name) => self.shadowRoot.querySelector('#'+name),
-            apply: apply.bind(self),
-        })
+        self.$ = new Proxy(function(){}, {get:(_, name) => self.shadowRoot.querySelector('#'+name), apply})
 
         const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(self))
         methods.forEach(method => self[method] = self[method].bind(self))
@@ -52,13 +49,16 @@ function kit(self, ...vars){
     }
 }
 
-function apply(_, __, [arg, ...values]){
+function apply(_, self, [arg, ...values]){
     if(typeof arg === 'string'){
         if(arg.startsWith('*')){
-            return Array.from(this.shadowRoot.querySelectorAll(arg.slice(1) || '*'))
+            return Array.from(self.shadowRoot.querySelectorAll(arg.slice(1) || '*'))
+        }
+        else if(arg.startsWith('!')){
+            self.dispatchEvent( new CustomEvent(arg.slice(1), {bubbles:true, composed:true, detail:values[0]}) )
         }
         else{
-            return this.shadowRoot.querySelector(arg)
+            return self.shadowRoot.querySelector(arg)
         }
     }
     else if(Array.isArray(arg)){ //タグ関数で起動
