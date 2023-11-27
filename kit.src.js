@@ -51,11 +51,11 @@ function kit(self, ...vars){
 
 function apply(_, self, [arg, ...values]){
     if(typeof arg === 'string'){
-        if(arg.startsWith('*')){
-            return Array.from(self.shadowRoot.querySelectorAll(arg.slice(1) || '*'))
-        }
-        else if(arg.startsWith('!')){
+        if(arg.startsWith('@')){
             self.dispatchEvent( new CustomEvent(arg.slice(1), {bubbles:true, composed:true, detail:values[0]}) )
+        }
+        else if(arg.startsWith('*')){
+            return Array.from(self.shadowRoot.querySelectorAll(arg.slice(1) || '*'))
         }
         else{
             return self.shadowRoot.querySelector(arg)
